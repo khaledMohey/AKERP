@@ -1,0 +1,43 @@
+@page "/settings"
+
+<PageTitle>الإعدادات</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-2">نظرة عامة على الأساس</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    مرحلة 1: الشركات، المستخدمين، الرخص، والتخصيص لكل عميل عبر company_id.
+</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="6" lg="3">
+        <MudPaper Class="pa-4 module-card" Outlined="true" Elevation="0">
+            <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" Class="mb-2" />
+            <MudText Typo="Typo.subtitle1">الشركات</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">إنشاء عميل إيجار أو بيع</MudText>
+            <MudButton Href="/companies" Variant="Variant.Text" Color="Color.Primary">فتح</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="3">
+        <MudPaper Class="pa-4 module-card" Outlined="true" Elevation="0">
+            <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Class="mb-2" />
+            <MudText Typo="Typo.subtitle1">المستخدمين</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">صلاحيات داخل الشركة</MudText>
+            <MudButton Href="/users" Variant="Variant.Text" Color="Color.Primary">فتح</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="3">
+        <MudPaper Class="pa-4 module-card" Outlined="true" Elevation="0">
+            <MudIcon Icon="@Icons.Material.Filled.VpnKey" Color="Color.Primary" Class="mb-2" />
+            <MudText Typo="Typo.subtitle1">الرخصة</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">إيجار / بيع / إيقاف / حدود</MudText>
+            <MudButton Href="/license" Variant="Variant.Text" Color="Color.Primary">فتح</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="6" lg="3">
+        <MudPaper Class="pa-4 module-card" Outlined="true" Elevation="0">
+            <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Primary" Class="mb-2" />
+            <MudText Typo="Typo.subtitle1">التخصيص</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">Features و Settings للعميل</MudText>
+            <MudButton Href="/features" Variant="Variant.Text" Color="Color.Primary">فتح</MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>

@@ -1,0 +1,18 @@
+---
+description: AKERP product and architecture rules for all agents
+globs:
+alwaysApply: true
+---
+
+# AKERP Agent Rules
+
+Before changing this repo, read `AGENTS.md` and `docs/AKERP-SYSTEM-GUIDE.pdf` (or the HTML/MD sources).
+
+## Non-negotiables
+
+- One codebase for rental (`Subscription`) and sale (`Perpetual`). Never fork per customer.
+- Customize via `company_id` + `CompanyFeature` + `CompanySetting` (+ later custom fields/templates). Never `if (companyName == ...)`.
+- UI is Blazor + MudBlazor RTL; Desktop is WebView2 host only.
+- Prefer completing Phase 2 (Partners → Inventory → Sales → Purchase) before Phase 4–6 cloud/offline complexity.
+- Keep admin flows working: `/companies`, `/users`, `/license`, `/features`.
+- Update `AGENTS.md` phase status when a major chunk ships.

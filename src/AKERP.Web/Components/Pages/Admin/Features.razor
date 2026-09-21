@@ -1,0 +1,94 @@
+@page "/features"
+@rendermode InteractiveServer
+@using AKERP.Application.Abstractions
+@using AKERP.Domain
+@inject ICompanyConfigService Config
+@inject ICurrentSession Session
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>التخصيص</PageTitle>
+
+@if (!_ready) { <MudProgressLinear Indeterminate="true" /> }
+else
+{
+    <MudText Typo="Typo.h5" Class="mb-1">تخصيص الشركة</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        فعّل الخصائص وإعدادات السلوك لـ @Session.Current!.CompanyName فقط — نفس الكود لباقي العملاء.
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Outlined="true" Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="mb-3">Features</MudText>
+                @foreach (var f in _features)
+                {
+                    <div class="d-flex align-center justify-space-between mb-2">
+                        <div>
+                            <MudText Typo="Typo.body1">@f.TitleAr</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@f.Key</MudText>
+                        </div>
+                        <MudSwitch Value="f.IsEnabled"
+                                   ValueChanged="@(EventCallback.Factory.Create<bool>(this, v => ToggleFeature(f.Key, v)))"
+                                   Color="Color.Primary" />
+                    </div>
+                }
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Outlined="true" Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="mb-3">Settings</MudText>
+                <MudTextField @bind-Value="_currency" Label="العملة" Variant="Variant.Outlined" Class="mb-3" />
+                <MudTextField @bind-Value="_tax" Label="نسبة الضريبة" Variant="Variant.Outlined" Class="mb-3" />
+                <MudSelect T="string" @bind-Value="_commission" Label="طريقة العمولة" Variant="Variant.Outlined" Class="mb-3">
+                    <MudSelectItem Value="@("flat")">نسبة ثابتة</MudSelectItem>
+                    <MudSelectItem Value="@("tiers")">شرائح</MudSelectItem>
+                </MudSelect>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettingsAsync">حفظ الإعدادات</MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _ready;
+    private List<FeatureItem> _features = [];
+    private string _currency = "EGP";
+    private string _tax = "14";
+    private string _commission = "flat";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Session.LoadAsync();
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        _features = (await Config.GetFeaturesAsync(Session.Current!.CompanyId)).ToList();
+        var settings = await Config.GetSettingsAsync(Session.Current.CompanyId);
+        _currency = settings.FirstOrDefault(x => x.Key == SettingKeys.Currency)?.Value ?? "EGP";
+        _tax = settings.FirstOrDefault(x => x.Key == SettingKeys.TaxPercent)?.Value ?? "14";
+        _commission = settings.FirstOrDefault(x => x.Key == SettingKeys.CommissionMethod)?.Value ?? "flat";
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task ToggleFeature(string key, bool enabled)
+    {
+        await Config.SetFeatureAsync(Session.Current!.CompanyId, key, enabled);
+        _features = (await Config.GetFeaturesAsync(Session.Current.CompanyId)).ToList();
+        Snackbar.Add(enabled ? "تم تفعيل الخاصية" : "تم إيقاف الخاصية", Severity.Info);
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        var companyId = Session.Current!.CompanyId;
+        await Config.UpsertSettingAsync(companyId, SettingKeys.Currency, _currency);
+        await Config.UpsertSettingAsync(companyId, SettingKeys.TaxPercent, _tax);
+        await Config.UpsertSettingAsync(companyId, SettingKeys.CommissionMethod, _commission);
+        Snackbar.Add("تم حفظ الإعدادات", Severity.Success);
+    }
+}

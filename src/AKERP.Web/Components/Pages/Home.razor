@@ -1,0 +1,74 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject ICurrentSession Session
+
+<PageTitle>لوحة التحكم - AKERP</PageTitle>
+
+<div class="hero-panel mb-6">
+    <MudText Typo="Typo.h4" Class="mb-1">
+        مرحبًا @(Session.Current?.DisplayName ?? "بك") في AKERP
+    </MudText>
+    <MudText Typo="Typo.body1">
+        @(Session.Current?.CompanyName ?? "نظام ERP") — إيجار وبيع من نفس الكود، مع تخصيص لكل عميل.
+    </MudText>
+</div>
+
+<MudGrid Spacing="3" Class="mb-6">
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 stat-card" Elevation="0" Outlined="true">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">مبيعات اليوم</MudText>
+            <MudText Typo="Typo.h5">0.00</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 stat-card" Elevation="0" Outlined="true">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">تحصيلات</MudText>
+            <MudText Typo="Typo.h5">0.00</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 stat-card" Elevation="0" Outlined="true">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">أصناف تحت الحد</MudText>
+            <MudText Typo="Typo.h5">0</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4 stat-card" Elevation="0" Outlined="true">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">مستحقات عملاء</MudText>
+            <MudText Typo="Typo.h5">0.00</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudText Typo="Typo.h6" Class="mb-3">الموديولات</MudText>
+<MudGrid>
+    @foreach (var module in _modules)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Class="pa-4 module-card" Elevation="0" Outlined="true">
+                <div class="d-flex align-center gap-3 mb-2">
+                    <MudIcon Icon="@module.Icon" Color="Color.Primary" />
+                    <MudText Typo="Typo.subtitle1">@module.Title</MudText>
+                </div>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">@module.Description</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="@module.Href">فتح</MudButton>
+            </MudPaper>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private readonly List<ModuleItem> _modules =
+    [
+        new("المخزون", "أصناف، حركات، جرد، حدود طلب", Icons.Material.Filled.Inventory2, "/inventory"),
+        new("المبيعات", "عروض، فواتير، مرتجعات، تحصيل", Icons.Material.Filled.PointOfSale, "/sales"),
+        new("المشتريات", "طلبات، أوامر، استلام، فواتير", Icons.Material.Filled.ShoppingCart, "/purchase"),
+        new("عملاء وموردين", "ملفات، أرصدة، حدود ائتمان", Icons.Material.Filled.Groups, "/partners"),
+        new("المناديب", "مناطق، أهداف، عمولات، تحصيلات", Icons.Material.Filled.Badge, "/reps"),
+        new("الحسابات", "دليل، قيود، صناديق، تقارير مالية", Icons.Material.Filled.AccountBalance, "/accounting"),
+        new("التقارير", "مخزون، أرباح، كشوف حساب", Icons.Material.Filled.Assessment, "/reports"),
+        new("الإعدادات والرخص", "إيجار، بيع، Features لكل عميل", Icons.Material.Filled.Settings, "/settings")
+    ];
+
+    private sealed record ModuleItem(string Title, string Description, string Icon, string Href);
+}

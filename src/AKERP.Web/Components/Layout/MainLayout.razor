@@ -1,0 +1,102 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@using AKERP.Application.Abstractions
+@using AKERP.Domain.Enums
+@inject ICurrentSession Session
+@inject NavigationManager Nav
+
+<MudThemeProvider Theme="_theme" IsDarkMode="false" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@if (!_booted)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (!Session.IsAuthenticated)
+{
+    @Body
+}
+else
+{
+    <MudLayout>
+        <MudAppBar Elevation="0" Class="akerp-appbar">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" />
+            <MudText Typo="Typo.h6" Class="ms-2">AKERP</MudText>
+            <MudSpacer />
+            <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small" Class="me-2">
+                @(Session.Current!.LicenseType == LicenseType.Perpetual ? "بيع نهائي" : "إيجار")
+            </MudChip>
+            <MudText Typo="Typo.body2" Class="me-3 d-none d-md-flex">@Session.Current.CompanyName</MudText>
+            <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+                <MudMenuItem Disabled="true">@Session.Current.DisplayName (@Session.Current.Role)</MudMenuItem>
+                <MudDivider />
+                <MudMenuItem OnClick="LogoutAsync">تسجيل الخروج</MudMenuItem>
+            </MudMenu>
+        </MudAppBar>
+
+        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="1" Variant="DrawerVariant.Mini" OpenMiniOnHover="true">
+            <NavMenu />
+        </MudDrawer>
+
+        <MudMainContent Class="akerp-main">
+            <div class="akerp-content">
+                @Body
+            </div>
+        </MudMainContent>
+    </MudLayout>
+}
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _booted;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#0F766E",
+            Secondary = "#0EA5E9",
+            AppbarBackground = "#0B1220",
+            AppbarText = "#F8FAFC",
+            Background = "#F1F5F9",
+            Surface = "#FFFFFF",
+            DrawerBackground = "#FFFFFF",
+            DrawerText = "#0F172A",
+            TextPrimary = "#0F172A",
+            TextSecondary = "#64748B"
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Session.LoadAsync();
+        _booted = true;
+
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Trim('/').ToLowerInvariant();
+        var isLogin = path.StartsWith("login");
+        if (!Session.IsAuthenticated && !isLogin)
+            Nav.NavigateTo("/login");
+        else
+            StateHasChanged();
+    }
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task LogoutAsync()
+    {
+        await Session.ClearAsync();
+        Nav.NavigateTo("/login");
+    }
+
+    public void Dispose() => Session.Changed -= OnSessionChanged;
+}

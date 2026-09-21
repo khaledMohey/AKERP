@@ -1,0 +1,278 @@
+@page "/companies"
+@rendermode InteractiveServer
+@using AKERP.Application.Abstractions
+@using AKERP.Domain.Enums
+@inject ICompanyService CompanyService
+@inject ICurrentSession Session
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>حسابات العملاء</PageTitle>
+
+@if (!_ready) { <MudProgressLinear Indeterminate="true" /> }
+else if (!Session.IsAuthenticated) { }
+else
+{
+    <div class="d-flex align-center justify-space-between mb-4 flex-wrap gap-2">
+        <div>
+            <MudText Typo="Typo.h5">حسابات العملاء</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                إنشاء عميل = شركة + رخصة (إيجار/بيع) + حساب دخول
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+                   OnClick="OpenCreate">إنشاء حساب عميل</MudButton>
+    </div>
+
+    <MudTable Items="_items" Hover="true" Dense="true" Elevation="0"
+              Style="background:white;border:1px solid #e2e8f0;border-radius:12px;">
+        <HeaderContent>
+            <MudTh>العميل</MudTh>
+            <MudTh>نوع الرخصة</MudTh>
+            <MudTh>مفتاح الرخصة</MudTh>
+            <MudTh>الانتهاء</MudTh>
+            <MudTh>حساب الدخول</MudTh>
+            <MudTh>الحالة</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudText Typo="Typo.body1">@context.Name</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@(context.Code ?? "-")</MudText>
+            </MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(context.LicenseType == LicenseType.Perpetual ? Color.Info : Color.Primary)">
+                    @(context.LicenseType == LicenseType.Perpetual ? "بيع نهائي" : "إيجار")
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudText Typo="Typo.caption" Style="font-family:monospace">@(context.LicenseKey ?? "-")</MudText>
+            </MudTd>
+            <MudTd>
+                @if (context.LicenseType == LicenseType.Perpetual)
+                {
+                    <MudText Typo="Typo.body2">بدون انتهاء</MudText>
+                }
+                else if (context.ExpiresAtUtc is null)
+                {
+                    <MudText Typo="Typo.body2">-</MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2">@context.ExpiresAtUtc.Value.ToLocalTime().ToString("yyyy/MM/dd")</MudText>
+                }
+            </MudTd>
+            <MudTd>@(context.AdminUserName ?? "-")</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                    @(context.IsActive ? "نشط" : "موقوف")
+                </MudChip>
+            </MudTd>
+            <MudTd Style="white-space:nowrap">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" title="تعديل"
+                               OnClick="@(() => OpenEdit(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.VpnKey" Size="Size.Small" Color="Color.Primary" title="إدارة الرخصة"
+                               OnClick="@(() => Nav.NavigateTo($"/license?companyId={context.Id}"))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+<MudDialog @bind-Visible="_dialogOpen" Options="new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true }">
+    <TitleContent>@(_editingId is null ? "إنشاء حساب عميل جديد" : "تعديل بيانات العميل")</TitleContent>
+    <DialogContent>
+        @if (_editingId is null)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4" Variant="Variant.Outlined">
+                هيتكوّن: شركة + رخصة + يوزر دخول للعميل
+            </MudAlert>
+
+            <MudTextField @bind-Value="_formName" Label="اسم الشركة / العميل" Variant="Variant.Outlined" Class="mb-3" Immediate="true" />
+            <MudTextField @bind-Value="_formCode" Label="كود مختصر (اختياري)" Variant="Variant.Outlined" Class="mb-3" />
+
+            <MudSelect T="LicenseType" Value="_formLicenseType" Label="نوع التعاقد" Variant="Variant.Outlined" Class="mb-2"
+                       ValueChanged="OnLicenseTypeChanged">
+                <MudSelectItem T="LicenseType" Value="@LicenseType.Subscription">إيجار (اشتراك بمدة)</MudSelectItem>
+                <MudSelectItem T="LicenseType" Value="@LicenseType.Perpetual">بيع نهائي (بدون انتهاء)</MudSelectItem>
+            </MudSelect>
+
+            <MudPaper Class="pa-3 mb-3" Outlined="true" Elevation="0" Style="background:#F8FAFC">
+                @if (_formLicenseType == LicenseType.Subscription)
+                {
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">تفاصيل الإيجار</MudText>
+                    <MudNumericField @bind-Value="_formMonths" Label="مدة الاشتراك بالشهور" Variant="Variant.Outlined" Min="1" Class="mb-2" />
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        تاريخ الانتهاء المتوقع: @DateTime.Now.AddMonths(Math.Max(1, _formMonths)).ToString("yyyy/MM/dd")
+                    </MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.subtitle2">تفاصيل البيع النهائي</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        رخصة ملكية بدون تاريخ انتهاء — مفيش تجديد اشتراك.
+                    </MudText>
+                }
+            </MudPaper>
+
+            <MudNumericField @bind-Value="_formMaxUsers" Label="أقصى عدد مستخدمين" Variant="Variant.Outlined" Min="1" Class="mb-3" />
+
+            <MudDivider Class="my-3" />
+            <MudText Typo="Typo.subtitle2" Class="mb-2">حساب دخول العميل</MudText>
+            <MudTextField @bind-Value="_adminUser" Label="اسم المستخدم" Variant="Variant.Outlined" Class="mb-3" Immediate="true" />
+            <MudTextField @bind-Value="_adminDisplay" Label="الاسم الظاهر" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_adminPass" Label="كلمة المرور" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-1" />
+        }
+        else
+        {
+            <MudTextField @bind-Value="_formName" Label="اسم الشركة" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_formCode" Label="الكود" Variant="Variant.Outlined" Class="mb-3" />
+            <MudSwitch @bind-Value="_formActive" Label="الحساب نشط" Color="Color.Primary" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _dialogOpen = false">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_saving">
+            @(_saving ? "جاري الحفظ..." : "حفظ")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<MudDialog @bind-Visible="_resultOpen" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true }">
+    <TitleContent>تم إنشاء حساب العميل</TitleContent>
+    <DialogContent>
+        @if (_lastResult is not null)
+        {
+            <MudText Class="mb-2"><b>الشركة:</b> @_lastResult.CompanyName</MudText>
+            <MudText Class="mb-2">
+                <b>النوع:</b> @(_lastResult.LicenseType == LicenseType.Perpetual ? "بيع نهائي" : "إيجار")
+            </MudText>
+            <MudText Class="mb-2"><b>مفتاح الرخصة:</b> <code>@_lastResult.LicenseKey</code></MudText>
+            <MudText Class="mb-2">
+                <b>الانتهاء:</b>
+                @(_lastResult.ExpiresAtUtc is null ? "بدون انتهاء" : _lastResult.ExpiresAtUtc.Value.ToLocalTime().ToString("yyyy/MM/dd"))
+            </MudText>
+            <MudText Class="mb-2"><b>يوزر الدخول:</b> @_lastResult.AdminUserName</MudText>
+            <MudAlert Severity="Severity.Success" Dense="true" Class="mt-3">
+                سجّل خروج وجرّب الدخول بيوزر العميل، أو افتح الرخصة من زر المفتاح.
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => _resultOpen = false">تم</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private bool _ready;
+    private bool _saving;
+    private List<CompanyListItem> _items = [];
+    private bool _dialogOpen;
+    private bool _resultOpen;
+    private CreateCustomerResult? _lastResult;
+    private Guid? _editingId;
+    private string _formName = "";
+    private string _formCode = "";
+    private bool _formActive = true;
+    private LicenseType _formLicenseType = LicenseType.Subscription;
+    private int _formMaxUsers = 5;
+    private int _formMonths = 12;
+    private string _adminUser = "";
+    private string _adminDisplay = "";
+    private string _adminPass = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Session.LoadAsync();
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        await Reload();
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task Reload() => _items = (await CompanyService.GetAllAsync()).ToList();
+
+    private void OpenCreate()
+    {
+        _editingId = null;
+        _formName = "";
+        _formCode = "";
+        _formLicenseType = LicenseType.Subscription;
+        _formMaxUsers = 5;
+        _formMonths = 12;
+        _adminUser = "";
+        _adminDisplay = "";
+        _adminPass = "";
+        _dialogOpen = true;
+    }
+
+    private void OpenEdit(CompanyListItem item)
+    {
+        _editingId = item.Id;
+        _formName = item.Name;
+        _formCode = item.Code ?? "";
+        _formActive = item.IsActive;
+        _dialogOpen = true;
+    }
+
+    private Task OnLicenseTypeChanged(LicenseType type)
+    {
+        _formLicenseType = type;
+        if (type == LicenseType.Perpetual)
+            _formMonths = 0;
+        else if (_formMonths <= 0)
+            _formMonths = 12;
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            if (_editingId is null)
+            {
+                var result = await CompanyService.CreateCustomerAsync(new CreateCustomerRequest(
+                    _formName,
+                    _formCode,
+                    _formLicenseType,
+                    _formMaxUsers,
+                    _formMonths,
+                    _adminUser,
+                    _adminDisplay,
+                    _adminPass));
+
+                _dialogOpen = false;
+                _lastResult = result;
+                _resultOpen = true;
+                await Reload();
+                Snackbar.Add("تم إنشاء حساب العميل والرخصة", Severity.Success);
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(_formName))
+                {
+                    Snackbar.Add("اسم الشركة مطلوب", Severity.Warning);
+                    return;
+                }
+                await CompanyService.UpdateAsync(_editingId.Value, _formName, _formCode, _formActive);
+                _dialogOpen = false;
+                await Reload();
+                Snackbar.Add("تم التعديل", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

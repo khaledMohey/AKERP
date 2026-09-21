@@ -1,0 +1,119 @@
+@page "/users"
+@rendermode InteractiveServer
+@using AKERP.Application.Abstractions
+@inject IUserService UserService
+@inject ICurrentSession Session
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>المستخدمين</PageTitle>
+
+@if (!_ready) { <MudProgressLinear Indeterminate="true" /> }
+else
+{
+    <div class="d-flex align-center justify-space-between mb-4">
+        <div>
+            <MudText Typo="Typo.h5">المستخدمين</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">مستخدمو شركة: @Session.Current!.CompanyName</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="OpenCreate">مستخدم جديد</MudButton>
+    </div>
+
+    <MudTable Items="_items" Hover="true" Dense="true" Elevation="0" Style="background:white;border:1px solid #e2e8f0;border-radius:12px;">
+        <HeaderContent>
+            <MudTh>المستخدم</MudTh>
+            <MudTh>الاسم</MudTh>
+            <MudTh>الدور</MudTh>
+            <MudTh>الحالة</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.UserName</MudTd>
+            <MudTd>@context.DisplayName</MudTd>
+            <MudTd>@context.Role</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                    @(context.IsActive ? "نشط" : "موقوف")
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudButton Size="Size.Small" Variant="Variant.Text"
+                           OnClick="@(() => ToggleActive(context))">
+                    @(context.IsActive ? "إيقاف" : "تفعيل")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+<MudDialog @bind-Visible="_dialogOpen" Options="new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true }">
+    <TitleContent>مستخدم جديد</TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_userName" Label="اسم المستخدم" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_displayName" Label="الاسم الظاهر" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_password" Label="كلمة المرور" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-3" />
+        <MudSelect T="string" @bind-Value="_role" Label="الدور" Variant="Variant.Outlined">
+            <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
+            <MudSelectItem Value="@("User")">User</MudSelectItem>
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _dialogOpen = false">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private bool _ready;
+    private List<UserListItem> _items = [];
+    private bool _dialogOpen;
+    private string _userName = "";
+    private string _displayName = "";
+    private string _password = "";
+    private string _role = "User";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Session.LoadAsync();
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        await Reload();
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task Reload() =>
+        _items = (await UserService.GetByCompanyAsync(Session.Current!.CompanyId)).ToList();
+
+    private void OpenCreate()
+    {
+        _userName = _displayName = _password = "";
+        _role = "User";
+        _dialogOpen = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            await UserService.CreateAsync(Session.Current!.CompanyId, _userName, _displayName, _password, _role);
+            _dialogOpen = false;
+            await Reload();
+            Snackbar.Add("تم إنشاء المستخدم", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ToggleActive(UserListItem user)
+    {
+        await UserService.SetActiveAsync(user.Id, !user.IsActive);
+        await Reload();
+    }
+}

@@ -1,0 +1,58 @@
+html, body {
+    margin: 0;
+    background: #F1F5F9;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+.akerp-appbar {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.akerp-main {
+    min-height: 100vh;
+}
+
+.akerp-content {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.stat-card {
+    height: 100%;
+}
+
+.hero-panel {
+    background: linear-gradient(135deg, #0F766E 0%, #0EA5E9 100%);
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem 1.75rem;
+}
+
+.module-card {
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.module-card:hover {
+    transform: translateY(-2px);
+}
+
+.login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background:
+        radial-gradient(circle at top right, rgba(14, 165, 233, 0.25), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.35), transparent 45%),
+        #0B1220;
+}
+
+.login-card-wrap {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-card {
+    border-radius: 1rem;
+}

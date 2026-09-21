@@ -1,0 +1,86 @@
+@page "/login"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using AKERP.Application.Abstractions
+@inject IUserService UserService
+@inject ICurrentSession Session
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>تسجيل الدخول - AKERP</PageTitle>
+
+<div class="login-card-wrap">
+    <MudPaper Class="login-card pa-8" Elevation="0">
+        <MudText Typo="Typo.h4" Class="mb-1" Align="Align.Center">AKERP</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6" Align="Align.Center">
+            سجّل الدخول لإدارة شركتك ورخصتك
+        </MudText>
+
+        <MudTextField @bind-Value="_userName" Label="اسم المستخدم" Variant="Variant.Outlined"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person"
+                      Immediate="true" Class="mb-3" />
+
+        <MudTextField @bind-Value="_password" Label="كلمة المرور" Variant="Variant.Outlined"
+                      InputType="InputType.Password" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Lock" Immediate="true"
+                      OnKeyUp="OnKey" Class="mb-4" />
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                   Size="Size.Large" Disabled="_busy" OnClick="LoginAsync">
+            @(_busy ? "جاري الدخول..." : "دخول")
+        </MudButton>
+
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4" Align="Align.Center">
+            تجريبي: admin / admin123
+        </MudText>
+    </MudPaper>
+</div>
+
+@code {
+    private string _userName = "admin";
+    private string _password = "admin123";
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Session.LoadAsync();
+        if (Session.IsAuthenticated)
+            Nav.NavigateTo("/");
+    }
+
+    private async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await LoginAsync();
+    }
+
+    private async Task LoginAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var (ok, error, session) = await UserService.AuthenticateAsync(_userName, _password);
+            if (!ok || session is null)
+            {
+                _error = error ?? "فشل الدخول";
+                return;
+            }
+
+            await Session.SetAsync(session);
+            Snackbar.Add($"مرحبًا {session.DisplayName}", Severity.Success);
+            Nav.NavigateTo("/");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

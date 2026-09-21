@@ -1,0 +1,234 @@
+@page "/license"
+@rendermode InteractiveServer
+@using AKERP.Application.Abstractions
+@using AKERP.Domain.Enums
+@using Microsoft.AspNetCore.WebUtilities
+@inject ILicenseService LicenseService
+@inject ICompanyService CompanyService
+@inject ICurrentSession Session
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>الرخص</PageTitle>
+
+@if (!_ready) { <MudProgressLinear Indeterminate="true" /> }
+else
+{
+    <MudText Typo="Typo.h5" Class="mb-1">إدارة الرخص</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        اختار العميل أولاً — الإيجار له تاريخ انتهاء، والبيع النهائي بدون انتهاء.
+    </MudText>
+
+    <MudPaper Class="pa-4 mb-4" Outlined="true" Elevation="0">
+        <MudSelect T="Guid" Value="_selectedCompanyId" Label="العميل / الشركة" Variant="Variant.Outlined"
+                   ValueChanged="OnCompanyChanged" Dense="false">
+            @foreach (var c in _companies)
+            {
+                <MudSelectItem T="Guid" Value="@c.Id">
+                    @c.Name — @(c.LicenseType == LicenseType.Perpetual ? "بيع" : "إيجار")
+                </MudSelectItem>
+            }
+        </MudSelect>
+    </MudPaper>
+
+    @if (_license is null)
+    {
+        <MudAlert Severity="Severity.Warning">لا توجد رخصة لهذا العميل.</MudAlert>
+    }
+    else
+    {
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4" Outlined="true" Elevation="0" Style="@SummaryStyle">
+                    <MudText Typo="Typo.caption">النوع الحالي في قاعدة البيانات</MudText>
+                    <MudText Typo="Typo.h6">@(_license.Type == LicenseType.Perpetual ? "بيع نهائي" : "إيجار")</MudText>
+                    <MudText Typo="Typo.body2">
+                        الانتهاء:
+                        @(_license.Type == LicenseType.Perpetual || _license.ExpiresAtUtc is null
+                            ? "بدون انتهاء"
+                            : _license.ExpiresAtUtc.Value.ToLocalTime().ToString("yyyy/MM/dd"))
+                    </MudText>
+                    <MudText Typo="Typo.caption" Class="mt-2" Style="font-family:monospace">@_license.LicenseKey</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="8">
+                <MudPaper Class="pa-4" Outlined="true" Elevation="0">
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="LicenseType" Value="_type" Label="تحويل النوع" Variant="Variant.Outlined"
+                                       ValueChanged="OnTypeChanged">
+                                <MudSelectItem T="LicenseType" Value="@LicenseType.Subscription">إيجار</MudSelectItem>
+                                <MudSelectItem T="LicenseType" Value="@LicenseType.Perpetual">بيع نهائي</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSelect T="LicenseStatus" @bind-Value="_status" Label="الحالة" Variant="Variant.Outlined">
+                                <MudSelectItem T="LicenseStatus" Value="@LicenseStatus.Active">نشطة</MudSelectItem>
+                                <MudSelectItem T="LicenseStatus" Value="@LicenseStatus.Suspended">موقوفة</MudSelectItem>
+                                <MudSelectItem T="LicenseStatus" Value="@LicenseStatus.Expired">منتهية</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+
+                        @if (_type == LicenseType.Subscription)
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudDatePicker Date="_expires" DateChanged="OnExpiresChanged"
+                                               Label="تاريخ انتهاء الإيجار" Variant="Variant.Outlined" Editable="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
+                                    وضع الإيجار: لازم تاريخ انتهاء. بعد الحفظ هيتسجل في الداتا.
+                                </MudAlert>
+                            </MudItem>
+                        }
+                        else
+                        {
+                            <MudItem xs="12">
+                                <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined">
+                                    وضع البيع النهائي: تاريخ الانتهاء هيتشال من الداتا بعد الحفظ (null).
+                                </MudAlert>
+                            </MudItem>
+                        }
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_maxUsers" Label="أقصى مستخدمين" Variant="Variant.Outlined" Min="1" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_maxDevices" Label="أقصى أجهزة" Variant="Variant.Outlined" Min="1" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="_modules" Label="الموديولات" Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudButton Class="mt-4" Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="_saving">
+                        @(_saving ? "جاري الحفظ..." : "حفظ التغييرات في الداتا")
+                    </MudButton>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+}
+
+@code {
+    private bool _ready;
+    private bool _saving;
+    private List<CompanyListItem> _companies = [];
+    private Guid _selectedCompanyId;
+    private LicenseDetails? _license;
+    private LicenseType _type;
+    private LicenseStatus _status;
+    private DateTime? _expires;
+    private int _maxUsers = 5;
+    private int _maxDevices = 5;
+    private string _modules = "";
+
+    private string SummaryStyle =>
+        _license?.Type == LicenseType.Perpetual
+            ? "background:linear-gradient(135deg,#ECFEFF,#F0FDFA);border-color:#67E8F9"
+            : "background:linear-gradient(135deg,#F0FDFA,#ECFDF5);border-color:#5EEAD4";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Session.LoadAsync();
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        _companies = (await CompanyService.GetAllAsync()).ToList();
+
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        Guid? fromQuery = null;
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("companyId", out var raw) &&
+            Guid.TryParse(raw, out var qid))
+        {
+            fromQuery = qid;
+        }
+
+        _selectedCompanyId = fromQuery
+            ?? _companies.FirstOrDefault(c => c.Id == Session.Current!.CompanyId)?.Id
+            ?? _companies.FirstOrDefault()?.Id
+            ?? Guid.Empty;
+
+        if (_selectedCompanyId != Guid.Empty)
+            await LoadLicenseAsync(_selectedCompanyId);
+
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task OnCompanyChanged(Guid companyId)
+    {
+        _selectedCompanyId = companyId;
+        await LoadLicenseAsync(companyId);
+    }
+
+    private async Task LoadLicenseAsync(Guid companyId)
+    {
+        _license = await LicenseService.GetByCompanyAsync(companyId);
+        if (_license is null) return;
+
+        _type = _license.Type;
+        _status = _license.Status;
+        _expires = _license.ExpiresAtUtc?.ToLocalTime() ?? (_type == LicenseType.Subscription ? DateTime.Today.AddYears(1) : null);
+        _maxUsers = _license.MaxUsers;
+        _maxDevices = _license.MaxDevices;
+        _modules = _license.ModulesCsv;
+    }
+
+    private Task OnTypeChanged(LicenseType type)
+    {
+        _type = type;
+        if (type == LicenseType.Perpetual)
+            _expires = null;
+        else if (_expires is null)
+            _expires = DateTime.Today.AddYears(1);
+        return Task.CompletedTask;
+    }
+
+    private Task OnExpiresChanged(DateTime? value)
+    {
+        _expires = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_selectedCompanyId == Guid.Empty) return;
+        if (_type == LicenseType.Subscription && _expires is null)
+        {
+            Snackbar.Add("للإيجار لازم تحدد تاريخ انتهاء", Severity.Warning);
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            await LicenseService.UpdateAsync(
+                _selectedCompanyId,
+                _type,
+                _status,
+                _expires?.ToUniversalTime(),
+                _maxUsers,
+                _maxDevices,
+                _modules);
+
+            await LoadLicenseAsync(_selectedCompanyId);
+            _companies = (await CompanyService.GetAllAsync()).ToList();
+
+            var label = _type == LicenseType.Perpetual ? "بيع نهائي بدون انتهاء" : $"إيجار حتى {_expires:yyyy/MM/dd}";
+            Snackbar.Add($"تم الحفظ في الداتا: {label}", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -1,0 +1,6 @@
+@AKERP.Api_HostAddress = http://localhost:5016
+
+GET {{AKERP.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

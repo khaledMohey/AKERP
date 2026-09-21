@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>AKERP — دليل النظام الشامل</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    color: #0f172a;
+    line-height: 1.7;
+    font-size: 11.5pt;
+  }
+  h1 { font-size: 22pt; color: #0f766e; margin: 0 0 8px; }
+  h2 {
+    font-size: 15pt;
+    color: #0f766e;
+    border-bottom: 2px solid #99f6e4;
+    padding-bottom: 4px;
+    margin-top: 28px;
+    page-break-after: avoid;
+  }
+  h3 { font-size: 12.5pt; color: #0f172a; margin-top: 18px; page-break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  .cover {
+    page-break-after: always;
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(160deg, #0b1220 0%, #0f766e 55%, #0ea5e9 100%);
+    color: #fff;
+    padding: 40px;
+    border-radius: 16px;
+  }
+  .cover h1 { color: #fff; font-size: 34pt; margin-bottom: 12px; }
+  .cover .sub { font-size: 14pt; opacity: .95; max-width: 90%; }
+  .meta { margin-top: 40px; font-size: 11pt; opacity: .9; }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.35);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-left: 6px;
+    font-size: 10pt;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px;
+    font-size: 10.5pt;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    vertical-align: top;
+    text-align: right;
+  }
+  th { background: #f0fdfa; color: #115e59; }
+  code, .mono {
+    font-family: Consolas, "Courier New", monospace;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 9.5pt;
+  }
+  pre {
+    background: #0b1220;
+    color: #e2e8f0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 9pt;
+    line-height: 1.45;
+    direction: ltr;
+    text-align: left;
+  }
+  .box {
+    border: 1px solid #99f6e4;
+    background: #f0fdfa;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .warn {
+    border-color: #fcd34d;
+    background: #fffbeb;
+  }
+  .done { color: #047857; font-weight: 600; }
+  .next { color: #0369a1; font-weight: 600; }
+  ul { padding-right: 22px; }
+  .toc a { color: #0f766e; text-decoration: none; }
+  .footer-note { color: #64748b; font-size: 9.5pt; margin-top: 24px; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div>
+    <span class="badge">AKERP</span>
+    <span class="badge">.NET 8</span>
+    <span class="badge">إيجار + بيع</span>
+    <span class="badge">Cursor Ready</span>
+  </div>
+  <h1>دليل نظام AKERP الشامل</h1>
+  <p class="sub">
+    وثيقة مرجعية للفريق وللـ AI Agents على Cursor: شرح المنتج، المعمارية، ما تم بناؤه،
+    المراحل القادمة، وقواعد العمل حتى لا يتفرع المشروع أو يُكسر نموذج التخصيص.
+  </p>
+  <div class="meta">
+    <div>الإصدار الوثائقي: 1.0</div>
+    <div>تاريخ الإصدار: 21 سبتمبر 2026</div>
+    <div>المستودع المستهدف: GitHub (للعمل المشترك)</div>
+    <div>الملفات المرتبطة: <span class="mono">AGENTS.md</span> + <span class="mono">docs/AKERP-SYSTEM-GUIDE.pdf</span></div>
+  </div>
+</section>
+
+<h2>الفهرس</h2>
+<ol class="toc">
+  <li>رؤية المنتج ونموذج البيع</li>
+  <li>مبادئ التصميم الحاكمة</li>
+  <li>المعمارية والتقنيات</li>
+  <li>هيكل المستودع والمشاريع</li>
+  <li>نموذج البيانات الحالي</li>
+  <li>ما تم إنجازه بالتفصيل (المراحل المنتهية)</li>
+  <li>المراحل القادمة بالتفصيل</li>
+  <li>كيف يعمل التخصيص لكل عميل</li>
+  <li>الإيجار مقابل البيع — سلوك النظام</li>
+  <li>تشغيل محلي وتجربة LAN بين لابين</li>
+  <li>دليل المساهم / Cursor Agent</li>
+  <li>قائمة ملفات مهمة ومسارات شاشات</li>
+  <li>قاموس المصطلحات</li>
+</ol>
+
+<h2>1) رؤية المنتج ونموذج البيع</h2>
+<p>
+<strong>AKERP</strong> نظام تخطيط موارد مؤسسات (ERP) موجّه للسوق العربي، يُباع كمنتج قابل للتخصيص دون إعادة بناء النظام لكل عميل.
+</p>
+<p>الموديولات المستهدفة في المنتج الكامل:</p>
+<ul>
+  <li>لوحة تحكم Dashboard</li>
+  <li>المخزون Inventories</li>
+  <li>المبيعات Sales</li>
+  <li>المشتريات Purchase</li>
+  <li>العملاء والموردين Partners</li>
+  <li>المناديب Sales Representatives</li>
+  <li>الحسابات Accounting</li>
+  <li>التقارير Reports</li>
+</ul>
+
+<div class="box">
+  <strong>نموذج الإيرادات المزدوج (من نفس الكود):</strong>
+  <ul>
+    <li><strong>إيجار / اشتراك (Subscription):</strong> العميل يدفع دوريًا، المالك يستطيع الإيقاف/التمديد/التحديث مركزيًا.</li>
+    <li><strong>بيع نهائي (Perpetual):</strong> العميل يشتري ملكية، غالبًا تشغيل أوفلاين/محلي، بدون تاريخ انتهاء اشتراك.</li>
+  </ul>
+</div>
+
+<p>
+يمكن تحويل عميل من إيجار إلى بيع لاحقًا بتغيير نوع الرخصة ونقل/ضبط مكان البيانات — <strong>بدون عمل نسخة كود جديدة</strong>.
+</p>
+
+<h2>2) مبادئ التصميم الحاكمة</h2>
+<ol>
+  <li><strong>كود واحد:</strong> لا يوجد مشروع Sale منفصل ومشروع Rent منفصل.</li>
+  <li><strong>السلوك بالرخصة والإعدادات:</strong> الفرق يظهر عبر <span class="mono">LicenseType</span> و Features/Settings.</li>
+  <li><strong>التخصيص بالبيانات لا بالـ forks:</strong> كل عميل له <span class="mono">company_id</span>.</li>
+  <li><strong>واجهة ويب حديثة داخل ديسكتوب:</strong> Blazor/MudBlazor هو مصدر الواجهة، Desktop غلاف WebView2.</li>
+  <li><strong>Modular Monolith:</strong> لا Microservices في المرحلة الحالية.</li>
+  <li><strong>ابنِ الكل على مراحل:</strong> النطاق كامل، لكن التسليم مرتب.</li>
+</ol>
+
+<div class="box warn">
+  <strong>ممنوع:</strong>
+  شروط مثل <span class="mono">if (clientName == "شركة س")</span>،
+  أو نسخ مجلد المشروع كاملًا لكل عميل،
+  أو كسر السلوك الافتراضي عند تنفيذ طلب خاص.
+</div>
+
+<h2 class="page-break">3) المعمارية والتقنيات</h2>
+<table>
+  <tr><th>الطبقة</th><th>التقنية</th><th>الدور</th></tr>
+  <tr><td>واجهة ERP</td><td>Blazor Server + MudBlazor</td><td>UI عربي RTL بشكل ويب حديث</td></tr>
+  <tr><td>ديسكتوب</td><td>WPF + WebView2</td><td>تشغيل نفس الواجهة كتطبيق ويندوز</td></tr>
+  <tr><td>API</td><td>ASP.NET Core (<span class="mono">AKERP.Api</span>)</td><td>جاهز لرخص سحابية/أدمن لاحقًا</td></tr>
+  <tr><td>Domain</td><td>C# class library</td><td>الكيانات والتعدادات وكتالوج الخصائص</td></tr>
+  <tr><td>Application</td><td>C# class library</td><td>عقود الخدمات و DTOs</td></tr>
+  <tr><td>Infrastructure</td><td>EF Core</td><td>قاعدة البيانات، الخدمات، Seed، التجزئة</td></tr>
+  <tr><td>DB تطوير</td><td>SQLite</td><td><span class="mono">akerp.dev.db</span></td></tr>
+  <tr><td>DB إنتاج متوقع</td><td>SQL Server</td><td>خصوصًا للـ On-premise متعدد الأجهزة</td></tr>
+  <tr><td>Framework</td><td>.NET 8</td><td>موحّد لكل المشاريع</td></tr>
+</table>
+
+<pre>Browser / Desktop(WebView2)
+        │
+        ▼
+   AKERP.Web (Blazor UI)
+        │
+        ▼
+ AKERP.Application (contracts)
+        │
+        ▼
+ AKERP.Infrastructure (EF + services)
+        │
+        ▼
+   SQLite / SQL Server
+</pre>
+
+<h2>4) هيكل المستودع والمشاريع</h2>
+<pre>AKERP.sln
+├── src/AKERP.Domain
+├── src/AKERP.Application
+├── src/AKERP.Infrastructure
+├── src/AKERP.Web
+├── src/AKERP.Desktop
+├── src/AKERP.Api
+├── deploy/lan/                 # تجربة إيجار بين جهازين
+├── docs/AKERP-SYSTEM-GUIDE.pdf
+├── AGENTS.md                   # تعليمات Cursor
+└── README.md
+</pre>
+
+<p><strong>اعتماديات المشاريع:</strong> Web/Api → Application + Infrastructure → Domain.</p>
+
+<h2>5) نموذج البيانات الحالي</h2>
+<table>
+  <tr><th>الكيان</th><th>الوصف</th><th>ملاحظات</th></tr>
+  <tr><td>Company</td><td>عميل/شركة</td><td>أساس العزل المنطقي</td></tr>
+  <tr><td>License</td><td>رخصة الشركة</td><td>Type, Status, Key, Expiry, MaxUsers, Modules</td></tr>
+  <tr><td>AppUser</td><td>مستخدم</td><td>مرتبط بشركة؛ اسم المستخدم فريد عالميًا حاليًا</td></tr>
+  <tr><td>CompanyFeature</td><td>Feature flag</td><td>تفعيل خصائص لشركة دون الباقي</td></tr>
+  <tr><td>CompanySetting</td><td>إعدادات سلوك</td><td>مثل العملة والضريبة وطريقة العمولة</td></tr>
+</table>
+
+<p>
+أنواع الرخصة: <span class="mono">Subscription</span> / <span class="mono">Perpetual</span>.
+<br/>حالات الرخصة: <span class="mono">Active</span> / <span class="mono">Suspended</span> / <span class="mono">Expired</span>.
+</p>
+
+<h2 class="page-break">6) ما تم إنجازه بالتفصيل</h2>
+
+<h3 class="done">مرحلة 0 — تأسيس المشروع والواجهة</h3>
+<ul>
+  <li>إنشاء الحل والمشاريع الستة.</li>
+  <li>واجهة MudBlazor عربية RTL بألوان Teal/Sky.</li>
+  <li>قوائم لكل الموديولات (حتى غير المنفذة) كهيكل تنقّل.</li>
+  <li>غلاف Desktop بـ WebView2.</li>
+  <li>توثيق أولي في README.</li>
+</ul>
+
+<h3 class="done">مرحلة 1 — أساس المنتج (منجز)</h3>
+<ul>
+  <li><strong>Login/Logout/Session:</strong> جلسة محفوظة في المتصفح عبر ProtectedSessionStorage.</li>
+  <li><strong>حسابات العملاء (/companies):</strong> إنشاء عميل = شركة + رخصة + يوزر دخول + إعدادات افتراضية.</li>
+  <li><strong>المستخدمين (/users):</strong> إدارة مستخدمي الشركة الحالية.</li>
+  <li><strong>الرخص (/license):</strong> اختيار أي عميل، تحويل إيجار↔بيع مع أثر حقيقي في DB (تاريخ انتهاء أو null).</li>
+  <li><strong>التخصيص (/features):</strong> Features + Settings حسب الشركة.</li>
+  <li><strong>Seed:</strong> شركة تجريبية + admin/admin123.</li>
+  <li><strong>LAN rental test:</strong> profile <span class="mono">lan</span> على منفذ 5088 + نشر DesktopClient مع <span class="mono">server.json</span>.</li>
+</ul>
+
+<div class="box">
+  <strong>حساب تجريبي:</strong> المستخدم <span class="mono">admin</span> — كلمة المرور <span class="mono">admin123</span>
+</div>
+
+<h3>شاشات Placeholder فقط (بدون منطق أعمال بعد)</h3>
+<ul>
+  <li>/inventory — المخزون</li>
+  <li>/sales — المبيعات</li>
+  <li>/purchase — المشتريات</li>
+  <li>/partners — عملاء وموردين</li>
+  <li>/reps — المناديب</li>
+  <li>/accounting — الحسابات</li>
+  <li>/reports — التقارير</li>
+  <li>أرقام الـ Dashboard ما زالت تجميلية (أصفار)</li>
+</ul>
+
+<h2>7) المراحل القادمة بالتفصيل</h2>
+
+<h3 class="next">مرحلة 2 — التشغيل اليومي (الأولوية التالية)</h3>
+<ol>
+  <li><strong>Partners:</strong> عميل/مورد/الاثنين، حد ائتمان، رصيد افتتاحي، كشف حساب أولي.</li>
+  <li><strong>Inventory:</strong> أصناف، وحدات، باركود، مخازن، وارد/منصرف/تحويل/تسوية، جرد، حد الطلب، تكلفة (متوسط مرجح أولًا).</li>
+  <li><strong>Sales:</strong> عرض سعر → أمر بيع → فاتورة → مرتجع → تحصيل؛ خصم/ضريبة.</li>
+  <li><strong>Purchase:</strong> طلب → أمر → استلام → فاتورة مشتريات → مرتجع.</li>
+  <li>كل المستندات تُقيّد بـ <span class="mono">CompanyId</span> وتؤثر على المخزون حيث يلزم.</li>
+</ol>
+
+<h3 class="next">مرحلة 3 — الميدان والمالية</h3>
+<ol>
+  <li>المناديب: مناطق، ربط عملاء، أهداف، عمولات (flat/tiers عبر settings)، تحصيلات.</li>
+  <li>الحسابات: دليل حسابات، قيود يدوية + آلية من الفواتير، صناديق/بنوك، ذمم.</li>
+  <li>تقارير أساسية + PDF.</li>
+  <li>Dashboard بأرقام حقيقية.</li>
+</ol>
+
+<h3 class="next">مرحلة 4 — المنتج التجاري</h3>
+<ol>
+  <li>تفعيل AKERP.Api للتحكم السحابي بالاشتراكات.</li>
+  <li>Admin Panel للمالك: تفعيل/إيقاف/باقات.</li>
+  <li>Auto-update للديسكتوب.</li>
+  <li>ملف رخصة موقّع لعملاء البيع النهائي الأوفلاين.</li>
+  <li>تعدد المستخدمين كمنتج (LAN/Cloud).</li>
+</ol>
+
+<h3 class="next">مرحلة 5 — Hybrid Offline للإيجار</h3>
+<ol>
+  <li>عمل أوفلاين مع مزامنة.</li>
+  <li>Grace period عند انقطاع النت.</li>
+  <li>معالجة التعارضات.</li>
+</ol>
+
+<h3 class="next">مرحلة 6 — تخصيص متقدم</h3>
+<ol>
+  <li>Custom Fields.</li>
+  <li>قوالب طباعة لكل شركة.</li>
+  <li>Behavior variants أوسع.</li>
+  <li>Plugins فقط للطلبات الكبيرة غير القابلة للإعدادات.</li>
+</ol>
+
+<h2 class="page-break">8) كيف يعمل التخصيص لكل عميل</h2>
+<pre>نفس Build / نفس الكود
+        │
+عند التشغيل: من هو company_id؟
+        │
+اقرأ Features + Settings لهذه الشركة فقط
+        │
+اعرض/احسب وفقًا لذلك
+</pre>
+
+<table>
+  <tr><th>الطبقة</th><th>الاستخدام</th><th>مثال</th></tr>
+  <tr><td>Settings</td><td>أرقام/اختيارات بدون كود جديد</td><td>ضريبة 14% مقابل 0%</td></tr>
+  <tr><td>Features</td><td>تشغيل/إيقاف خاصية موجودة</td><td>رقم السيارة على الفاتورة</td></tr>
+  <tr><td>Variants</td><td>تغيير طريقة سلوك موجود</td><td>عمولة flat مقابل tiers</td></tr>
+  <tr><td>Templates</td><td>شكل طباعة</td><td>فاتورة بشكل مختلف</td></tr>
+  <tr><td>Plugins</td><td>آخر حل لمنطق فريد ومعقد</td><td>عقد خاص جدًا</td></tr>
+</table>
+
+<p>
+<strong>لعميل البيع الأوفلاين لاحقًا:</strong> يُرسل Update للبرنامج + ملف رخصة/إعدادات مرتبط بـ company_id.
+<br/><strong>لعميل الإيجار:</strong> التفعيل من السيرفر/اللوحة على الـ Tenant مباشرة.
+</p>
+
+<h2>9) الإيجار مقابل البيع — سلوك النظام</h2>
+<table>
+  <tr><th>البند</th><th>إيجار Subscription</th><th>بيع Perpetual</th></tr>
+  <tr><td>تاريخ الانتهاء</td><td>موجود ويُفرض</td><td>null / بدون انتهاء</td></tr>
+  <tr><td>القفل عند الانتهاء/الإيقاف</td><td>نعم (مخطط ومبدوء في Login check)</td><td>لا عبر الاشتراك</td></tr>
+  <tr><td>مكان البيانات (مستهدف)</td><td>Cloud أو Hybrid</td><td>محلي/LAN عند العميل غالبًا</td></tr>
+  <tr><td>التحديثات</td><td>مركزية ضمن الاشتراك</td><td>اختيارية / عقد صيانة</td></tr>
+  <tr><td>إنشاء الحساب الآن</td><td>من /companies مع مدة شهور</td><td>من /companies بدون انتهاء</td></tr>
+</table>
+
+<h2>10) تشغيل محلي وتجربة LAN</h2>
+<h3>تطوير عادي</h3>
+<pre>dotnet run --project src/AKERP.Web --launch-profile https
+# https://localhost:7114
+</pre>
+
+<h3>تجربة إيجار بين لابين على نفس الشبكة</h3>
+<ol>
+  <li>على جهاز السيرفر: اعرف IP عبر <span class="mono">ipconfig</span>.</li>
+  <li>اسمح بالمنفذ 5088 في Firewall (Admin):
+    <pre>netsh advfirewall firewall add rule name="AKERP LAN 5088" dir=in action=allow protocol=TCP localport=5088</pre>
+  </li>
+  <li>شغّل:
+    <pre>dotnet run --project src/AKERP.Web --launch-profile lan</pre>
+  </li>
+  <li>انشر الديسكتوب:
+    <pre>powershell -ExecutionPolicy Bypass -File deploy/lan/publish-desktop.ps1 -ServerIp "IP_HERE"</pre>
+  </li>
+  <li>انسخ <span class="mono">deploy/lan/DesktopClient</span> للاب الثاني، وتأكد من <span class="mono">server.json</span>.</li>
+  <li>أنشئ عميل إيجار من /companies وادخل بيوزره على اللاب الثاني.</li>
+</ol>
+
+<h2 class="page-break">11) دليل المساهم / Cursor Agent</h2>
+<div class="box warn">
+قبل أي تعديل جوهري: اقرأ <span class="mono">AGENTS.md</span> وهذا الـ PDF. لا تبدأ مرحلة 4–6 قبل إكمال أساس مرحلة 2 إلا لسبب واضح متفق عليه.
+</div>
+
+<ol>
+  <li>افهم أن المهمة القادمة الطبيعية هي <strong>مرحلة 2</strong>.</li>
+  <li>أي كيان تشغيلي جديد يجب أن يحتوي <span class="mono">CompanyId</span>.</li>
+  <li>أي اختلاف بين العملاء = Feature/Setting/Variant.</li>
+  <li>حافظ على RTL وثيم MudBlazor الحالي.</li>
+  <li>لا تكسر شاشات الإدارة الحالية (Companies/Users/License/Features).</li>
+  <li>بعد إنجاز جزء كبير: حدّث قسم المراحل في <span class="mono">AGENTS.md</span>.</li>
+  <li>لا ترتكب أسرار أو قواعد بيانات إنتاج في Git.</li>
+  <li>التزم بـ .NET 8 و EF Core الحاليين.</li>
+</ol>
+
+<p><strong>أولوية مقترحة للمساهم الجديد:</strong></p>
+<ol>
+  <li>Partners module</li>
+  <li>Inventory module</li>
+  <li>Sales module</li>
+  <li>Purchase module</li>
+</ol>
+
+<h2>12) ملفات ومسارات مهمة</h2>
+<table>
+  <tr><th>المسار</th><th>الغرض</th></tr>
+  <tr><td>src/AKERP.Web/Program.cs</td><td>تشغيل التطبيق + LAN flag + DI</td></tr>
+  <tr><td>src/AKERP.Infrastructure/Persistence/*</td><td>DbContext والخدمات</td></tr>
+  <tr><td>src/AKERP.Web/Components/Pages/Admin/*</td><td>شركات/مستخدمين/رخص/تخصيص</td></tr>
+  <tr><td>src/AKERP.Web/Components/Pages/Modules/*</td><td>placeholders للموديولات</td></tr>
+  <tr><td>src/AKERP.Desktop/server.json</td><td>عنوان السيرفر للديسكتوب</td></tr>
+  <tr><td>deploy/lan/*</td><td>نشر وتجربة الشبكة المحلية</td></tr>
+  <tr><td>AGENTS.md</td><td>مرجع Cursor السريع</td></tr>
+</table>
+
+<p><strong>مسارات الواجهة الحالية:</strong></p>
+<ul>
+  <li><span class="mono">/login</span></li>
+  <li><span class="mono">/</span> Dashboard</li>
+  <li><span class="mono">/companies</span> حسابات العملاء</li>
+  <li><span class="mono">/users</span></li>
+  <li><span class="mono">/license</span></li>
+  <li><span class="mono">/features</span></li>
+  <li><span class="mono">/settings</span> نظرة عامة</li>
+  <li>موديولات التشغيل: inventory/sales/purchase/partners/reps/accounting/reports</li>
+</ul>
+
+<h2>13) قاموس المصطلحات</h2>
+<table>
+  <tr><th>العربي</th><th>في الكود/الإنجليزي</th></tr>
+  <tr><td>إيجار</td><td>Subscription</td></tr>
+  <tr><td>بيع نهائي</td><td>Perpetual</td></tr>
+  <tr><td>شركة / عميل منتج</td><td>Company / Tenant</td></tr>
+  <tr><td>رخصة</td><td>License</td></tr>
+  <tr><td>خاصية اختيارية</td><td>Feature</td></tr>
+  <tr><td>إعداد سلوك</td><td>Setting / Variant</td></tr>
+  <tr><td>مندوب</td><td>Rep</td></tr>
+  <tr><td>غلاف ويندوز</td><td>Desktop + WebView2</td></tr>
+  <tr><td>تجربة شبكة محلية</td><td>LAN profile :5088</td></tr>
+</table>
+
+<p class="footer-note">
+نهاية الدليل — AKERP System Guide v1.0 — للاستخدام الداخلي للفريق ورفعها على GitHub مع المستودع.
+<br/>عند تغير المعمارية أو إغلاق مرحلة، حدّث AGENTS.md وأعد توليد هذا الـ PDF.
+</p>
+
+</body>
+</html>
